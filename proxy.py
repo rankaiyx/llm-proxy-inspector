@@ -177,13 +177,36 @@ def _save(record_id: str, data: dict):
 proxy_app = FastAPI(title="LLM Proxy")
 
 
+HOP_BY_HOP_HEADERS = {
+    "connection",
+    "keep-alive",
+    "proxy-authenticate",
+    "proxy-authorization",
+    "te",
+    "trailer",
+    "transfer-encoding",
+    "upgrade",
+}
+
+REQUEST_HEADERS_TO_DROP = HOP_BY_HOP_HEADERS | {
+    "host",
+    "content-length",
+}
+
+RESPONSE_HEADERS_TO_DROP = HOP_BY_HOP_HEADERS | {
+    "content-encoding",
+    "content-length",
+}
+
+
 @proxy_app.api_route("/{path:path}", methods=["GET","POST","PUT","DELETE","PATCH","OPTIONS"])
 async def proxy(path: str, request: Request):
     url = f"{UPSTREAM_BASE}/{path}"
     headers = {
         k: v for k, v in request.headers.items()
-        if k.lower() not in ("host", "content-length")
+        if k.lower() not in REQUEST_HEADERS_TO_DROP
     }
+    headers["accept-encoding"] = "identity"
 
     body_bytes = await request.body()
     try:
@@ -308,11 +331,16 @@ async def proxy(path: str, request: Request):
                     "resp_raw":  resp.text if resp_json is None else None,
                 })
 
+        response_headers = {
+            k: v for k, v in resp.headers.items()
+            if k.lower() not in RESPONSE_HEADERS_TO_DROP
+        }
+
         return Response(
             content=resp.content,
             status_code=resp.status_code,
             headers={
-                **dict(resp.headers),
+                **response_headers,
                 "X-Proxy-Record-Id": record_id,
             },
             media_type=resp.headers.get("content-type"),
