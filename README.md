@@ -37,9 +37,20 @@ uv run python proxy.py --upstream http://127.0.0.1:8008 --proxy-port 8000 --ui-p
 
 ![Raw JSON](docs/rawjson.png)
 
+## 启动参数
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--upstream` | `http://127.0.0.1:8008` | 上游 LLM 服务地址 |
+| `--proxy-port` | `8000` | 代理监听端口 |
+| `--ui-port` | `8001` | UI 界面端口 |
+| `--max-records` | `200` | 最大记录数（LRU 淘汰） |
+| `--think` | `on` | `off` 时注入 `enable_thinking=false` |
+| `--params` | `(none)` | 注入到每个请求体的 JSON 参数 |
+
 ## 功能
 
-- [x] 透传所有 HTTP 方法，原始数据不变
+- [x] 支持 GET / POST / PUT / DELETE / PATCH / OPTIONS
 - [x] 流式 SSE 实时转发，结束后自动合并解析
 - [x] 非流式 JSON 响应直接展示
 - [x] 消息双栏视图（Request / Response）
@@ -55,12 +66,13 @@ uv run python proxy.py --upstream http://127.0.0.1:8008 --proxy-port 8000 --ui-p
 
 ## 目录结构
 
+单文件应用，HTML 内嵌在 `proxy.py` 中：
+
 ```
-llm-proxy/
-├── proxy.py          # 主程序（代理 + UI 服务）
+llm-proxy-inspector/
+├── proxy.py          # 主程序（代理 + UI 服务 + 内嵌前端）
 ├── requirements.txt
-└── static/
-    └── index.html    # 单文件前端
+└── docs/             # 截图
 ```
 
 ## OpenAI SDK 做法
